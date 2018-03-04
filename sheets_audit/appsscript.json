@@ -1,0 +1,20 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+    "enabledAdvancedServices": [{
+      "userSymbol": "Drive",
+      "serviceId": "drive",
+      "version": "v2"
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "dataStudio": {
+    "name": "Google Sheets Performance Auditor",
+    "logoUrl": "https://www.benlcollins.com/wp-content/uploads/2018/03/google_sheets_log-copy.png",
+    "company": "Collins Analytics LLC",
+    "companyUrl": "https://www.benlcollins.com",
+    "addonUrl": "https://www.benlcollins.com",
+    "supportUrl": "https://www.benlcollins.com",
+    "description": "Audit your Google Sheets"
+  }
+}
