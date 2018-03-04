@@ -1,10 +1,10 @@
 // --------------------------------
 // Program flow:
 // --------------------------------
-// user enters url in config step
-// connector fetches current performance data for sheet
-// connector finds the ID of this url
-// connector checks for this ID in cache, if there returns the archive spreadsheet url/id
+// user enters url in config step - DONE
+// connector fetches current performance data for sheet - DONE (except extra metrics)
+// connector finds the ID of this url - DONE
+// connector checks for this ID in cache or Properties service, if there returns the archive spreadsheet url/id - DONE
 // if archive url/id exists
 //   connector fetches archived data for this url
 //   also saves the latest round of data into the archive sheet
@@ -272,25 +272,120 @@ function isAdminUser() {
 *    in the form: [{values=[...]},{values=[...]},...]
 */
 function getData(request) {
+
+  // Get hold of user input parameters
+  //var url = request.configParams.url;
+  
+  // for testing
+  //var url = "https://docs.google.com/spreadsheets/d/1UwOm6r-g5r1nLSUipBucLgUxzBtf2bkFAcbg0KEdgMc/edit#gid=0"
+  //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
+  var url = "https://docs.google.com/spreadsheets/d/1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho/edit#gid=0";
   
   // get start time
   var startTime = new Date().getTime();
   
-  // Get hold of user input parameters
-  var url = request.configParams.url;
+  // Open spreadsheet
+  var ss = SpreadsheetApp.openByUrl(url);
+  var sheetId = ss.getId();
+  var sheets = ss.getSheets();
   
-  // for testing
-  //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
+  // fetch the current data
+  var sheetsData = getSheetsData(sheets);
   
-  var sheetsData = getSheetsData(url);
-  
-  // get end time
+  // get load time
+  // this is just a proxy value, based on how long it took Data Studio to get data
+  // make into a callback?
+  // will not add to archive, because triggered sheet work will not have an equivalent 
   var endTime = new Date().getTime();
+  var sheetLoadTime = millisToMinutesAndSeconds(endTime - startTime); 
+
+  // get user properties
+  var userProperties = PropertiesService.getUserProperties();
+  var sheetIds = userProperties.getKeys();
+  //userProperties.deleteAllProperties();
   
-  var sheetLoadTime = millisToMinutesAndSeconds(endTime - startTime);
+  Logger.log(sheetIds);
   
-  Logger.log(sheetsData);
+  // see if archive sheet exists for this url, by checking if this url id is a key in the properties service
+  var archived = sheetIds.filter(function(key) {
+    return key === sheetId;
+  });
   
+  Logger.log(archived);
+  
+  if (archived.length > 0) {
+    // archive sheet exists
+    Logger.log("archive not null");
+    
+    // open the archive sheet to get the archived data
+    var achiveId = sheetIds(archived[0]);
+    var archiveSs = SpreadsheetApp.openById(archiveId);
+    
+    // connector fetches archived data for this url
+    // also saves the latest round of data into the archive sheet
+    
+    
+    // connector combines current data with archived data
+    
+    
+    
+  }
+  else {
+    // no archived data yet
+    Logger.log("archive null");
+    
+    // create a new archive spreadsheet
+    
+    
+    // log the new data
+    
+    
+    // make note of ID of archive sheet
+    
+    // add this archive ID alongside this audit ID to the properties store
+    userProperties.setProperty(sheetId, "archiveID");  // TO DO change to archive ID
+    
+    // add current data to archive sheet
+    
+    
+    
+  }
+  
+  // -----------------------------------
+  // Auto Trigger section
+  // -----------------------------------
+  // very first time script runs, create time trigger (once a day default)
+  // runs function to:
+  // get all the user properties (audit url + archive url pairs)
+  // gets new round of performance data for audit url
+  // adds to the relevant archive url
+  
+  
+  
+  // -----------------------------------
+  // End trigger section
+  // -----------------------------------
+  
+  
+  /*
+  for (var id in sheetIds) {
+    Logger.log("key vals");
+    
+    Logger.log(id);
+    Logger.log(sheetIds[id]);
+  }
+  */
+  
+  
+  
+  //Logger.log(sheetsData);
+  
+  
+  
+  // -----------------------------------
+  // DS Section - uncomment
+  // -----------------------------------
+  /*
   // Prepare the schema for the fields requested.
   var dataSchema = [];
   request.fields.forEach(function(field) {
@@ -365,20 +460,17 @@ function getData(request) {
     schema: dataSchema,
     rows: data
   };
-  
+  */
 }
   
 
 /**
 * Get Sheets Data
 * Returns array of data for a given sheet url
-* @param {string} url - url of the Google Sheet to audit
+* @param {string} sheets - the Google Sheet object to audit
 * @returns {array} sheetsArray - data associated with this Sheet url
 */
-function getSheetsData(url) {
-  
-  var ss = SpreadsheetApp.openByUrl(url);
-  var sheets = ss.getSheets();
+function getSheetsData(sheets) {
   
   var sheetsArray = [];
   var numSheets = 0;
