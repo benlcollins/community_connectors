@@ -293,7 +293,7 @@ function getData(request) {
   
   // fetch the current data
   var sheetsData = getSheetsData(sheets);
-  Logger.log(sheetsData);
+  //Logger.log(sheetsData);
   
   // get load time
   // this is just a proxy value, based on how long it took Data Studio to get data
@@ -304,19 +304,19 @@ function getData(request) {
 
   // get user properties
   var userProperties = PropertiesService.getUserProperties();
-  Logger.log(userProperties.getProperties());
+  //Logger.log(userProperties.getProperties());
+  //userProperties.deleteAllProperties(); // TO DO: comment out for running script
   
   var propertyIds = userProperties.getKeys();
-  userProperties.deleteAllProperties(); // TO DO: comment out for running script
-  
-  Logger.log(propertyIds);
+
+  //Logger.log(propertyIds);
   
   // see if archive sheet exists for this url, by checking if this url id is a key in the properties service
   var archived = propertyIds.filter(function(key) {
     return key === sheetId;
   });
   
-  Logger.log(archived);
+  //Logger.log(archived);
   
   // archive sheet exists
   if (archived.length > 0) {
@@ -324,16 +324,31 @@ function getData(request) {
     Logger.log("archive not null");
     
     // open the archive sheet to get the archived data
-    var archiveId = userProperties.getProperty(archived[0]);
-    Logger.log(archiveId);
-    
-    //var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveId = userProperties.getProperty(archived[0]);   
+    var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveSheet = archiveSs.getActiveSheet();
     
     // connector fetches archived data for this url
+    var heads = archiveSheet.getDataRange().offset(0,0,1).getValues()[0];  // https://mashe.hawksey.info/2018/02/google-apps-script-patterns-writing-rows-of-data-to-google-sheets/
+    
+    var archiveData = archiveSheet.getRange(2,1,archiveSheet.getLastRow() - 1,archiveSheet.getLastColumn()).getValues();
+    Logger.log(archiveData);
+    
+    // connector combines current data with archived data
+    var newData = sheetsData.map(function(row) {
+      return heads.map(function(cell) {
+        return row[cell];
+      });
+    });
+    Logger.log(newData);
+    
+    var allData = newData.concat(archiveData);
+    Logger.log(allData);
+    
     // also saves the latest round of data into the archive sheet
     
     
-    // connector combines current data with archived data
+    
     
     
     
@@ -358,16 +373,25 @@ function getData(request) {
     
     // make note of ID of archive sheet
     var archiveId = fileJson.id;
-    Logger.log(archiveId);
+    
+    //var archiveId = "1lfdwMHrkWsrav2i9g1qoDcAicjb_7sCDzQCMtdnEN4Q";
+    //Logger.log(archiveId);
     
     // open spreadsheet and add header row
     var archiveSs = SpreadsheetApp.openById(archiveId);
     var archiveSheet = archiveSs.getActiveSheet();
     var headers = Object.keys(sheetsData[0]);
+    //Logger.log(headers);
     archiveSheet.getRange(1,1,1,headers.length).setValues([headers]);
       
     // add current data to archive sheet
+    var newRows = sheetsData.map(function(row) {
+      return headers.map(function(cell) {
+        return row[cell];
+      });
+    });
     
+    archiveSheet.getRange(2,1,sheetsData.length,headers.length).setValues(newRows);
     
     // add this archive ID alongside this audit ID to the properties store
     userProperties.setProperty(sheetId, archiveId);
@@ -590,8 +614,8 @@ function expensiveFunctions(sheet) {
     vols.push(arrs[i]);
   }
   
-  Logger.log("vols");
-  Logger.log(vols);
+  //Logger.log("vols");
+  //Logger.log(vols);
   
   return vols;
 }

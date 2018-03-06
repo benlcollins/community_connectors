@@ -1,4 +1,14 @@
-[18-03-06 11:17:15:145 EST] [{sheetRows=1037, totalCells=156160.0, arrayFuncCount=1.0, randbetweenFuncCount=0.0, nowFuncCount=0.0, name=staging_1, dataCellsCounter=296.0, todayFuncCount=0.0, randFuncCount=0.0, numSheets=2.0, sheetCells=46665.0, totalCellPercent=7.808, sheetCols=45}, {sheetRows=1795, totalCells=156160.0, arrayFuncCount=3.0, randbetweenFuncCount=0.0, nowFuncCount=0.0, name=Enrollment Data, dataCellsCounter=86979.0, todayFuncCount=0.0, randFuncCount=0.0, numSheets=2.0, sheetCells=109495.0, totalCellPercent=7.808, sheetCols=61}]
+[
+	{
+		sheetRows=1037, totalCells=156160.0, arrayFuncCount=1.0, randbetweenFuncCount=0.0, nowFuncCount=0.0, name=staging_1, dataCellsCounter=296.0, todayFuncCount=0.0, randFuncCount=0.0, numSheets=2.0, sheetCells=46665.0, totalCellPercent=7.808, sheetCols=45
+	}, 
+	{
+		sheetRows=1795, totalCells=156160.0, arrayFuncCount=3.0, randbetweenFuncCount=0.0, nowFuncCount=0.0, name=Enrollment Data, dataCellsCounter=86979.0, todayFuncCount=0.0, randFuncCount=0.0, numSheets=2.0, sheetCells=109495.0, totalCellPercent=7.808, sheetCols=61
+	}
+]
+
+
+
 [18-03-06 11:17:15:165 EST] {1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho=1HMP8tmVAr7yFcTPShbY_XKQ9KvdAmjSmnWWE3P9E2jQ}
 [18-03-06 11:17:15:184 EST] [1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho]
 [18-03-06 11:17:15:186 EST] [1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho]
@@ -22,3 +32,6 @@
 	totalCellPercent=7.808, 
 	sheetCols=45
 }
+
+
+[name, sheetCells, sheetRows, sheetCols, sheetDataCells, nowFuncCount, todayFuncCount, randFuncCount, randbetweenFuncCount, arrayFuncCount, vlookupFuncCount, totalCells, totalDataCells, numSheets, totalCellPercent, totalDataCellPercent]
