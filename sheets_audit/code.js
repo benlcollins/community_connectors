@@ -16,13 +16,13 @@
 //   connector creates a daily trigger to fetch data for this url (and any others that are in this users cache)
 //   connector stores the audit url and the archive url in users cache
 //   returns the new row of data to DS
+// want to implement a caching system to improve performance for user
 
 
 // --------------------------------
 // other performance checks:
 // --------------------------------
 // conditional formatting
-// vlookups
 // index/match formulas
 // number of charts
 // anything else from the spreadsheet api (not the built in service)
@@ -34,6 +34,13 @@
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
 
+
+// --------------------------------
+// Wishlist:
+// --------------------------------
+// revision history by date
+// revision history by user
+// github contribution chart?
 
 
 /** 
@@ -330,27 +337,43 @@ function getData(request) {
     
     // connector fetches archived data for this url
     var heads = archiveSheet.getDataRange().offset(0,0,1).getValues()[0];  // https://mashe.hawksey.info/2018/02/google-apps-script-patterns-writing-rows-of-data-to-google-sheets/
+    Logger.log(heads.length);
     
-    var archiveData = archiveSheet.getRange(2,1,archiveSheet.getLastRow() - 1,archiveSheet.getLastColumn()).getValues();
-    Logger.log(archiveData);
+    var archiveDataArray = archiveSheet.getRange(2,1,archiveSheet.getLastRow() - 1,archiveSheet.getLastColumn()).getValues();
+    Logger.log("archiveDataArray");
+    Logger.log(archiveDataArray);
     
     // connector combines current data with archived data
-    var newData = sheetsData.map(function(row) {
-      return heads.map(function(cell) {
-        return row[cell];
-      });
-    });
-    Logger.log(newData);
+    var archiveDataArrayOfObjects = [];
+    for (var i = 0; i < archiveDataArray.length; i++) {
+      var archiveDataObject = toObject(heads, archiveDataArray[i]);  // converts to object with key/value pairs
+      archiveDataArrayOfObjects.push(archiveDataObject);
+    }
+    Logger.log(" ");
+    Logger.log("archiveDataArrayOfObjects");
+    Logger.log(archiveDataArrayOfObjects);
     
-    var allData = newData.concat(archiveData);
+    // create new variable with current and archive data, for Data Studio
+    var allData = sheetsData.concat(archiveDataObject);
+    Logger.log(" ");
+    Logger.log("allData");
     Logger.log(allData);
     
     // also saves the latest round of data into the archive sheet
+    // TO DO: need to add a timestamp
+    var archiveTimestamp = new Date();
     
+    var newRows = sheetsData.map(function(row) {
+      return heads.map(function(cell) {
+        return (cell === "Timestamp") ? archiveTimestamp : row[cell];
+      });
+    });
     
+    Logger.log(newRows.length);
+    Logger.log(newRows[0].length);
+    Logger.log(newRows);
     
-    
-    
+    archiveSheet.getRange(archiveSheet.getLastRow() + 1,1,sheetsData.length,heads.length).setValues(newRows);
     
   }
   // no archived data yet
@@ -381,13 +404,18 @@ function getData(request) {
     var archiveSs = SpreadsheetApp.openById(archiveId);
     var archiveSheet = archiveSs.getActiveSheet();
     var headers = Object.keys(sheetsData[0]);
+    var headers = Object.keys(sheetsData[0]);
+    headers.push("Timetsamp");
     //Logger.log(headers);
+    
     archiveSheet.getRange(1,1,1,headers.length).setValues([headers]);
       
     // add current data to archive sheet
+    var currentTimestamp = new Date();
+    
     var newRows = sheetsData.map(function(row) {
       return headers.map(function(cell) {
-        return row[cell];
+        return (cell === "Timestamp") ? currentTimestamp : row[cell];
       });
     });
     
@@ -707,6 +735,20 @@ function millisToMinutesAndSeconds(millis) {
   var minutes = Math.floor(millis / 60000);
   var seconds = ((millis % 60000) / 1000).toFixed(0);
   return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+}
+
+/**
+* Convert array of names and array of values into object of key/value pairs
+* https://stackoverflow.com/questions/1117916/merge-keys-array-and-values-array-into-an-object-in-javascript
+* @param {array} names - these will be the keys in object
+* @param {array} values - these will be the values in object
+* @returns {object} object of key/value pairs
+*/
+function toObject(names, values) {
+    var result = {};
+    for (var i = 0; i < names.length; i++)
+         result[names[i]] = values[i];
+    return result;
 }
 
 
