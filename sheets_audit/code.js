@@ -513,7 +513,7 @@ function getSheetsData(sheets) {
     // how many cells have data in them
     var r = sheet.getLastRow();
     var c = sheet.getLastColumn();
-    var data_counter = r * c;
+    var sheetDataCells = r * c;
     
     if (data_counter !== 0) {
       
@@ -524,7 +524,7 @@ function getSheetsData(sheets) {
       dataValues.forEach(function(row) {
         row.forEach(function(cell) {
           if (cell === "") {
-            data_counter --;
+            sheetDataCells --;
           }
         });
       });  
@@ -539,7 +539,7 @@ function getSheetsData(sheets) {
     vals["sheetCells"] = sheetCells;
     vals["sheetRows"] = maxRows;
     vals["sheetCols"] = maxCols;
-    vals["dataCellsCounter"] = data_counter;
+    vals["sheetDataCells"] = sheetDataCells;
     vals["nowFuncCount"] = expFuncs[0];
     vals["todayFuncCount"] = expFuncs[1];
     vals["randFuncCount"] = expFuncs[2];
@@ -553,12 +553,13 @@ function getSheetsData(sheets) {
     // increment counters
     numSheets++;
     totalCells = totalCells + sheetCells;
-    totalDataCells = totalDataCells + sheetCells;
+    totalDataCells = totalDataCells + sheetDataCells;
     
   });
   
   // calculate total cells as percentage of Sheet Limit
   var totalCellPercent = (totalCells / SHEET_CELL_LIMIT) * 100;
+  var totalDataCellPercent = (totalDataCells / SHEET_CELL_LIMIT) * 100;
   
   // Add Google Sheet level data
   sheetsArray.forEach(function(sheetArray) {
@@ -566,6 +567,7 @@ function getSheetsData(sheets) {
     sheetArray["totalDataCells"] = totalDataCells;
     sheetArray["numSheets"] = numSheets;
     sheetArray["totalCellPercent"] = totalCellPercent;
+    sheetArray["totalDataCellPercent"] = totalDataCellPercent;
   });
   
   // return all the data
