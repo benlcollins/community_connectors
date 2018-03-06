@@ -307,7 +307,7 @@ function getData(request) {
   Logger.log(userProperties.getProperties());
   
   var propertyIds = userProperties.getKeys();
-  //userProperties.deleteAllProperties(); // TO DO: comment out for running script
+  userProperties.deleteAllProperties(); // TO DO: comment out for running script
   
   Logger.log(propertyIds);
   
@@ -356,21 +356,21 @@ function getData(request) {
     
     var fileJson = Drive.Files.insert(resource);
     
-    
-    
-    // log the new data
-    
-    
     // make note of ID of archive sheet
     var archiveId = fileJson.id;
     Logger.log(archiveId);
     
-    // add this archive ID alongside this audit ID to the properties store
-    userProperties.setProperty(sheetId, archiveId);  // TO DO change to archive ID
-    
+    // open spreadsheet and add header row
+    var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveSheet = archiveSs.getActiveSheet();
+    var headers = Object.keys(sheetsData[0]);
+    archiveSheet.getRange(1,1,1,headers.length).setValues([headers]);
+      
     // add current data to archive sheet
     
     
+    // add this archive ID alongside this audit ID to the properties store
+    userProperties.setProperty(sheetId, archiveId);
     
   }
   
@@ -515,7 +515,7 @@ function getSheetsData(sheets) {
     var c = sheet.getLastColumn();
     var sheetDataCells = r * c;
     
-    if (data_counter !== 0) {
+    if (sheetDataCells !== 0) {
       
       var dataRange = sheet.getRange(1,1,r,c);
       
