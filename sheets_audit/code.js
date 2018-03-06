@@ -25,6 +25,7 @@
 // vlookups
 // index/match formulas
 // number of charts
+// anything else from the spreadsheet api (not the built in service)
 
 
 // --------------------------------
@@ -286,6 +287,7 @@ function getData(request) {
   
   // Open spreadsheet
   var ss = SpreadsheetApp.openByUrl(url);
+  var sheetName = ss.getName();
   var sheetId = ss.getId();
   var sheets = ss.getSheets();
   
@@ -301,25 +303,30 @@ function getData(request) {
 
   // get user properties
   var userProperties = PropertiesService.getUserProperties();
-  var sheetIds = userProperties.getKeys();
-  //userProperties.deleteAllProperties();
+  Logger.log(userProperties.getProperties());
   
-  Logger.log(sheetIds);
+  var propertyIds = userProperties.getKeys();
+  //userProperties.deleteAllProperties(); // TO DO: comment out for running script
+  
+  Logger.log(propertyIds);
   
   // see if archive sheet exists for this url, by checking if this url id is a key in the properties service
-  var archived = sheetIds.filter(function(key) {
+  var archived = propertyIds.filter(function(key) {
     return key === sheetId;
   });
   
   Logger.log(archived);
   
+  // archive sheet exists
   if (archived.length > 0) {
-    // archive sheet exists
+    
     Logger.log("archive not null");
     
     // open the archive sheet to get the archived data
-    var achiveId = sheetIds(archived[0]);
-    var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveId = userProperties.getProperty(archived[0]);
+    Logger.log(archiveId);
+    
+    //var archiveSs = SpreadsheetApp.openById(archiveId);
     
     // connector fetches archived data for this url
     // also saves the latest round of data into the archive sheet
@@ -330,20 +337,35 @@ function getData(request) {
     
     
   }
+  // no archived data yet
   else {
-    // no archived data yet
+    
     Logger.log("archive null");
     
     // create a new archive spreadsheet
+    // using the Drive API
+    var name = "Archive - " + sheetName;
+    var folderId = "1hu87u1tGOgrIB72is4AxgvMxxjPnGRD1";
+    
+    var resource = {
+      title: name,
+      mimeType: MimeType.GOOGLE_SHEETS,
+      parents: [{ id: folderId }]
+    };
+    
+    var fileJson = Drive.Files.insert(resource);
+    
     
     
     // log the new data
     
     
     // make note of ID of archive sheet
+    var archiveId = fileJson.id;
+    Logger.log(archiveId);
     
     // add this archive ID alongside this audit ID to the properties store
-    userProperties.setProperty(sheetId, "archiveID");  // TO DO change to archive ID
+    userProperties.setProperty(sheetId, archiveId);  // TO DO change to archive ID
     
     // add current data to archive sheet
     
