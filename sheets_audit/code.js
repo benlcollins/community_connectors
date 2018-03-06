@@ -293,6 +293,7 @@ function getData(request) {
   
   // fetch the current data
   var sheetsData = getSheetsData(sheets);
+  Logger.log(sheetsData);
   
   // get load time
   // this is just a proxy value, based on how long it took Data Studio to get data
@@ -497,6 +498,7 @@ function getSheetsData(sheets) {
   var sheetsArray = [];
   var numSheets = 0;
   var totalCells = 0;
+  var totalDataCells = 0;
   
   sheets.forEach(function(sheet) {
     
@@ -543,6 +545,7 @@ function getSheetsData(sheets) {
     vals["randFuncCount"] = expFuncs[2];
     vals["randbetweenFuncCount"] = expFuncs[3];
     vals["arrayFuncCount"] = expFuncs[4];
+    vals["vlookupFuncCount"] = expFuncs[5];
     
     // push into sheetsArray
     sheetsArray.push(vals);
@@ -550,6 +553,7 @@ function getSheetsData(sheets) {
     // increment counters
     numSheets++;
     totalCells = totalCells + sheetCells;
+    totalDataCells = totalDataCells + sheetCells;
     
   });
   
@@ -559,6 +563,7 @@ function getSheetsData(sheets) {
   // Add Google Sheet level data
   sheetsArray.forEach(function(sheetArray) {
     sheetArray["totalCells"] = totalCells;
+    sheetArray["totalDataCells"] = totalDataCells;
     sheetArray["numSheets"] = numSheets;
     sheetArray["totalCellPercent"] = totalCellPercent;
   });
@@ -577,8 +582,14 @@ function getSheetsData(sheets) {
 function expensiveFunctions(sheet) {
   
   var vols = identifyVolatiles(sheet);
-  var arrs = identifyArrayFormulas(sheet);
-  vols.push(arrs);
+  var arrs = identifyOtherFunctions(sheet);
+  
+  for (var i = 0; i < arrs.length; i++) {
+    vols.push(arrs[i]);
+  }
+  
+  Logger.log("vols");
+  Logger.log(vols);
   
   return vols;
 }
@@ -632,7 +643,7 @@ function identifyVolatiles(sheet) {
 * @param {string} sheet - single sheet from the Google Sheet to audit
 * @returns {array} count of array functions in this sheet
 */
-function identifyArrayFormulas(sheet) {
+function identifyOtherFunctions(sheet) {
   
   // how many cells have data in them
   var r = sheet.getLastRow();
@@ -640,7 +651,9 @@ function identifyArrayFormulas(sheet) {
   var data_counter = r * c;
   
   var arrayCounter = 0;
+  var vlookupCounter = 0;
   var reArray = /.*ARRAYFORMULA.*/;
+  var reVlookup = /.*VLOOKUP.*/;
   
   if (data_counter !== 0) {
   
@@ -649,16 +662,15 @@ function identifyArrayFormulas(sheet) {
 
     formulaCells.forEach(function(row) {
       row.forEach(function(cell) {
-        if (cell.toUpperCase().match(reArray)) { 
-          arrayCounter ++; 
-        };
+        if (cell.toUpperCase().match(reArray)) { arrayCounter ++; };
+        if (cell.toUpperCase().match(reVlookup)) { vlookupCounter ++; };
       });
     });    
-  }
-  
-  return arrayCounter;
+  }  
+  return [arrayCounter, vlookupCounter];
 
 }
+
 
 /**
 * Convert milliseconds to Minutes and Seconds
