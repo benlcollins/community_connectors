@@ -5,6 +5,10 @@
       "userSymbol": "Drive",
       "serviceId": "drive",
       "version": "v2"
+    }, {
+      "userSymbol": "Sheets",
+      "serviceId": "sheets",
+      "version": "v4"
     }]
   },
   "exceptionLogging": "STACKDRIVER",
@@ -15,6 +19,9 @@
     "companyUrl": "https://www.benlcollins.com",
     "addonUrl": "https://www.benlcollins.com",
     "supportUrl": "https://www.benlcollins.com",
-    "description": "Audit your Google Sheets"
+    "description": "Audit your Google Sheets",
+    "templates": {
+      "default": "1vlxk-f_T5cWdyW-KhTCE3YYEuemQx6Ok"
+    }
   }
 }
