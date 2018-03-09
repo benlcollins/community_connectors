@@ -24,7 +24,7 @@
 // --------------------------------
 // conditional formatting
 // index/match formulas
-// number of charts
+// number of charts - DONE
 // anything else from the spreadsheet api (not the built in service)
 
 
@@ -34,6 +34,7 @@
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
 // specific error if you don't have permission, so user can request it
+// specific error if you try to mix revision history with sheet data
 
 
 
@@ -131,6 +132,10 @@ function getData(request) {
   Logger.log("Request Params");
   Logger.log(request);
   
+  // TO DO
+  // make the filter match any of the revision fields
+  // maybe a better, quicker way of doing this step altogether
+  // want to just know if the requested fields are any of the revision fields
   var choice = request.fields.filter(function(field) {
     return field.name === "revision_arbNum";
   });
@@ -197,6 +202,8 @@ function getData(request) {
     
     
   }
+  // TO DO 
+  // Decide if I want to use this approach with the else, or just go with default
   else {
     Logger.log("Non-revision data for this chart");
   }
@@ -569,6 +576,39 @@ function identifyOtherFunctions(sheet) {
 
 
 /**
+* Get revision history data for this url
+* Returns array of revision data for a given Google Sheet url
+* @param {string} url - url of the Google Sheet to audit
+* @returns {array} of objects containing revision username, email, date, date+hour and Id.
+*/
+function listAllRevisions(url) {
+  
+  var ss = SpreadsheetApp.openByUrl(url);
+  var fileId = ss.getId();
+  
+  var revisionData = [];
+  var revisions = Drive.Revisions.list(fileId, { maxResults: 1000 });
+  var items = revisions.items;
+  
+  Logger.log(items.length);
+  
+  for (var i = 0; i < items.length; i++) {
+    
+    var revision = {};
+    revision["revisionUsername"] = items[i].lastModifyingUserName;
+    revision["revisionEmail"] = items[i].lastModifyingUser.emailAddress;
+    revision["revisionDate"] = dateToString(items[i].modifiedDate);
+    revision["revisionDateHour"] = dateToStringHour(items[i].modifiedDate);
+    revision["revisionId"] = items[i].id;
+    
+    revisionData.push(revision);
+  }
+  
+  return revisionData;
+}
+
+
+/**
 * Convert milliseconds to Minutes and Seconds
 * @param {number} millis - milliseconds number
 * @returns {string} minutes and seconds in format 4:37
@@ -578,6 +618,7 @@ function millisToMinutesAndSeconds(millis) {
   var seconds = ((millis % 60000) / 1000).toFixed(0);
   return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 }
+
 
 /**
 * Convert array of names and array of values into object of key/value pairs
@@ -624,6 +665,10 @@ function dateToStringHour(string) {
 
 
 
+
+
+
+
 // ----------------------------------------
 // WORKINGS
 // ----------------------------------------
@@ -641,35 +686,10 @@ function testData() {
   
 }
 
-
-function listAllRevisions(url) {
   
-  var ss = SpreadsheetApp.openByUrl(url);
-  var fileId = ss.getId();
-  
-  var revisionData = [];
-  
-  // pagination with pageToken to consider
-  
-  var revisions = Drive.Revisions.list(fileId, { maxResults: 1000 });
-  var items = revisions.items;
-  
-  Logger.log(items.length);
-  
-  for (var i = 0; i < items.length; i++) {
-    
-    var revision = {};
-    revision["revisionUsername"] = items[i].lastModifyingUserName;
-    revision["revisionEmail"] = items[i].lastModifyingUser.emailAddress;
-    revision["revisionDate"] = dateToString(items[i].modifiedDate);
-    revision["revisionDateHour"] = dateToStringHour(items[i].modifiedDate);
-    revision["revisionId"] = items[i].id;
-    
-    revisionData.push(revision);
-  }
-  
-  /*
+/*
   // TO DO: keep calling revisions whilst page token exists (really big spreadsheets)
+  // inside main revision function
   if (revisions.nextPageToken > 0) {
     
     var token = revisions.nextPageToken; 
@@ -680,11 +700,8 @@ function listAllRevisions(url) {
     Logger.log(nextBatch);
   }
   */
-  
-  return revisionData;
-  
-}
-  
+
+
 
 // gets the next batch
 function getRevisionsBatch(id, pageToken) {
