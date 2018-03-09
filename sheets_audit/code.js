@@ -219,8 +219,8 @@ function getData(request) {
   
   // Open spreadsheet
   var ss = SpreadsheetApp.openByUrl(url);
-  var sheetName = ss.getName();
-  var sheetId = ss.getId();
+  var fileName = ss.getName();
+  var fileId = ss.getId();
   var sheets = ss.getSheets();
   
   // fetch the current data
@@ -264,6 +264,9 @@ function getData(request) {
     
     dataSchema.forEach(function(field) {
       switch(field.name) {
+        case 'file_name':
+          values.push(fileName);
+          break;
         case 'sheet_name':
           values.push(sheetData.name);
           break;
@@ -310,6 +313,9 @@ function getData(request) {
           values.push(sheetData.numSheets);
           break;
         case 'total_cell_percentage':
+          values.push(sheetData.totalCellPercent);
+          break;
+        case 'total_cell_percentage_100':
           values.push(sheetData.totalCellPercent);
           break;
         case 'total_data_cell_percentage':

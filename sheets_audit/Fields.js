@@ -3,6 +3,17 @@
 */
 var sheetsAuditSchema = [
   {
+    name: 'file_name',
+    label: 'Google Sheet filename',
+    description: 'Name of your Google Sheet',
+    dataType: 'STRING',
+    group: 'totals',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'TEXT'
+    }
+  },
+  {
     name: 'sheet_name',
     label: 'Sheet name',
     description: 'Name of the individual tabs in your Google Sheet',
@@ -187,6 +198,19 @@ var sheetsAuditSchema = [
     description: 'Total Cells expressed as a percentage of the Google Sheets Cell Limit of ' + SHEET_CELL_LIMIT,
     dataType: 'NUMBER',
     group: 'totals',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'PERCENT',
+      isReaggregatable: false
+    }
+  },
+  {
+    name: 'total_cell_percentage_100',
+    label: 'Total Cells / Cell Limit * 100',
+    description: 'Total Cells / Cell Limit of '  + SHEET_CELL_LIMIT + ' * 100',
+    dataType: 'NUMBER',
+    group: 'totals',
+    formula: 'total_cell_percentage * 100',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'PERCENT',
