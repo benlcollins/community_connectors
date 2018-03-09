@@ -41,6 +41,8 @@
 // revision history by date
 // revision history by user
 // github contribution chart?
+// get editors: https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet#geteditors
+
 
 
 /** 
@@ -87,6 +89,7 @@ var sheetsAuditSchema = [
     label: 'Sheet name',
     description: 'Name of the individual tabs in your Google Sheet',
     dataType: 'STRING',
+    group: 'sheet',
     semantics: {
       conceptType: 'DIMENSION',
       semanticType: 'TEXT'
@@ -97,6 +100,7 @@ var sheetsAuditSchema = [
     label: 'Sheet cell count',
     description: 'Count of the number of cells in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -108,6 +112,7 @@ var sheetsAuditSchema = [
     label: 'Sheet row count',
     description: 'Count of the number of rows in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -119,6 +124,7 @@ var sheetsAuditSchema = [
     label: 'Sheet column count',
     description: 'Count of the number of columns in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -126,10 +132,11 @@ var sheetsAuditSchema = [
     }
   },
   {
-    name: 'data_cells_counter',
-    label: 'Data cells count',
+    name: 'sheet_data_cells',
+    label: 'Sheet data cell count',
     description: 'Count of the number of cells containing data, in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -141,6 +148,7 @@ var sheetsAuditSchema = [
     label: 'NOW Function count',
     description: 'Count of the number NOW() functions in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet_formulas',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -152,6 +160,7 @@ var sheetsAuditSchema = [
     label: 'TODAY Function count',
     description: 'Count of the number TODAY() functions in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet_formulas',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -163,6 +172,7 @@ var sheetsAuditSchema = [
     label: 'RAND Function count',
     description: 'Count of the number RAND() functions in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet_formulas',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -174,6 +184,7 @@ var sheetsAuditSchema = [
     label: 'RANDBETWEEN Function count',
     description: 'Count of the number RANDBETWEEN() functions in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet_formulas',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -185,6 +196,31 @@ var sheetsAuditSchema = [
     label: 'Array Function count',
     description: 'Count of the number ArrayFormula() functions in a single tab of your Google Sheet',
     dataType: 'NUMBER',
+    group: 'sheet_formulas',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'NUMBER',
+      isReaggregatable: true
+    }
+  },
+  {
+    name: 'vlookup_func_counter',
+    label: 'Vlookup Function count',
+    description: 'Count of the number VLOOKUP() functions in a single tab of your Google Sheet',
+    dataType: 'NUMBER',
+    group: 'sheet_formulas',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'NUMBER',
+      isReaggregatable: true
+    }
+  },
+  {
+    name: 'chart_counter',
+    label: 'Chart count',
+    description: 'Count of the number of charts in a single tab of your Google Sheet',
+    dataType: 'NUMBER',
+    group: 'sheet_formulas',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -196,6 +232,19 @@ var sheetsAuditSchema = [
     label: 'Total Cells',
     description: 'Count of the total number of cells in your whole Google Sheet',
     dataType: 'NUMBER',
+    group: 'totals',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'NUMBER',
+      isReaggregatable: false
+    }
+  },
+  {
+    name: 'total_data_cells',
+    label: 'Total Data Cells',
+    description: 'Count of the total number of cells containing data in your whole Google Sheet',
+    dataType: 'NUMBER',
+    group: 'totals',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -207,6 +256,7 @@ var sheetsAuditSchema = [
     label: 'Number of Sheets',
     description: 'Count of the number of sheets in your whole Google Sheet',
     dataType: 'NUMBER',
+    group: 'totals',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'NUMBER',
@@ -215,9 +265,22 @@ var sheetsAuditSchema = [
   },
   {
     name: 'total_cell_percentage',
-    label: 'Percent of Cell Limit',
+    label: 'Total Cells as Percent of Cell Limit',
     description: 'Total Cells expressed as a percentage of the Google Sheets Cell Limit of ' + SHEET_CELL_LIMIT,
     dataType: 'NUMBER',
+    group: 'totals',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'PERCENT',
+      isReaggregatable: false
+    }
+  },
+  {
+    name: 'total_data_cell_percentage',
+    label: 'Data Cells as Percent of Cell Limit',
+    description: 'Total Data Cells expressed as a percentage of the Google Sheets Cell Limit of ' + SHEET_CELL_LIMIT,
+    dataType: 'NUMBER',
+    group: 'totals',
     semantics: {
       conceptType: 'METRIC',
       semanticType: 'PERCENT',
@@ -227,11 +290,13 @@ var sheetsAuditSchema = [
   {
     name: 'sheet_load_time',
     label: 'Sheet Load Time',
-    description: 'Time taken for Data Studio to fetch data for this Google Sheet, in minutes and seconds',
-    dataType: 'STRING',
+    description: 'Time taken for Data Studio to fetch data for this Google Sheet, in seconds',
+    dataType: 'NUMBER',
+    group: 'totals',
     semantics: {
-      conceptType: 'DIMENSION',
-      semanticType: 'TEXT'
+      conceptType: 'METRIC',
+      semanticType: 'DURATION',
+      isReaggregatable: false
     }
   }
 ];
@@ -282,12 +347,13 @@ function isAdminUser() {
 function getData(request) {
 
   // Get hold of user input parameters
-  //var url = request.configParams.url;
+  var url = request.configParams.url;
+  Logger.log(request.configParams);
   
   // for testing
   //var url = "https://docs.google.com/spreadsheets/d/1UwOm6r-g5r1nLSUipBucLgUxzBtf2bkFAcbg0KEdgMc/edit#gid=0"
   //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
-  var url = "https://docs.google.com/spreadsheets/d/1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho/edit#gid=0";
+  //var url = "https://docs.google.com/spreadsheets/d/1krGeDAeJq-6rJsx34dSEWM2eOkqFKth222KBCl-eAho/edit#gid=0";
   
   // get start time
   var startTime = new Date().getTime();
@@ -300,15 +366,21 @@ function getData(request) {
   
   // fetch the current data
   var sheetsData = getSheetsData(sheets);
-  //Logger.log(sheetsData);
+  Logger.log(sheetsData);
   
   // get load time
   // this is just a proxy value, based on how long it took Data Studio to get data
   // make into a callback?
   // will not add to archive, because triggered sheet work will not have an equivalent 
   var endTime = new Date().getTime();
-  var sheetLoadTime = millisToMinutesAndSeconds(endTime - startTime); 
-
+  
+  var sheetLoadTime = (endTime - startTime) / 1000; 
+  
+  var currentTimestamp = new Date();
+  
+  /*
+  // Section for keeping archives in an archive Google Sheet
+  //
   // get user properties
   var userProperties = PropertiesService.getUserProperties();
   //Logger.log(userProperties.getProperties());
@@ -353,11 +425,11 @@ function getData(request) {
     Logger.log("archiveDataArrayOfObjects");
     Logger.log(archiveDataArrayOfObjects);
     
-    // create new variable with current and archive data, for Data Studio
-    var allData = sheetsData.concat(archiveDataObject);
+    // add archive data to sheets data, for Data Studio
+    sheetsData.concat(archiveDataObject);
     Logger.log(" ");
     Logger.log("allData");
-    Logger.log(allData);
+    Logger.log(sheetsData);
     
     // also saves the latest round of data into the archive sheet
     // TO DO: need to add a timestamp
@@ -441,26 +513,15 @@ function getData(request) {
   // End trigger section
   // -----------------------------------
   
-  
-  /*
-  for (var id in sheetIds) {
-    Logger.log("key vals");
-    
-    Logger.log(id);
-    Logger.log(sheetIds[id]);
-  }
+
   */
-  
-  
-  
-  //Logger.log(sheetsData);
   
   
   
   // -----------------------------------
   // DS Section - uncomment
   // -----------------------------------
-  /*
+  
   // Prepare the schema for the fields requested.
   var dataSchema = [];
   request.fields.forEach(function(field) {
@@ -492,8 +553,8 @@ function getData(request) {
         case 'sheet_cols':
           values.push(sheetData.sheetCols);
           break;
-        case 'data_cells_counter':
-          values.push(sheetData.dataCellsCounter);
+        case 'sheet_data_cells':
+          values.push(sheetData.sheetDataCells);
           break;
         case 'now_func_counter':
           values.push(sheetData.nowFuncCount);
@@ -510,14 +571,26 @@ function getData(request) {
         case 'array_func_counter':
           values.push(sheetData.arrayFuncCount);
           break;
+        case 'vlookup_func_counter':
+          values.push(sheetData.vlookupFuncCount);
+          break;
+        case 'chart_counter':
+          values.push(sheetData.chartCount);
+          break;
         case 'total_cells':
           values.push(sheetData.totalCells);
+          break;
+        case 'total_data_cells':
+          values.push(sheetData.totalDataCells);
           break;
         case 'number_sheets':
           values.push(sheetData.numSheets);
           break;
         case 'total_cell_percentage':
           values.push(sheetData.totalCellPercent);
+          break;
+        case 'total_data_cell_percentage':
+          values.push(sheetData.totalDataCellPercent);
           break;
         case 'sheet_load_time':
           values.push(sheetLoadTime);
@@ -535,7 +608,7 @@ function getData(request) {
     schema: dataSchema,
     rows: data
   };
-  */
+  
 }
   
 
@@ -585,6 +658,9 @@ function getSheetsData(sheets) {
     // count how many volatile formulas
     var expFuncs = expensiveFunctions(sheet);
     
+    // count how many charts in the sheet
+    var chartCount = identifyCharts(sheet);
+    
     // add data to temporary object
     var vals = {};
     vals["name"] = name;
@@ -598,6 +674,7 @@ function getSheetsData(sheets) {
     vals["randbetweenFuncCount"] = expFuncs[3];
     vals["arrayFuncCount"] = expFuncs[4];
     vals["vlookupFuncCount"] = expFuncs[5];
+    vals["chartCount"] = chartCount;
     
     // push into sheetsArray
     sheetsArray.push(vals);
@@ -610,8 +687,8 @@ function getSheetsData(sheets) {
   });
   
   // calculate total cells as percentage of Sheet Limit
-  var totalCellPercent = (totalCells / SHEET_CELL_LIMIT) * 100;
-  var totalDataCellPercent = (totalDataCells / SHEET_CELL_LIMIT) * 100;
+  var totalCellPercent = (totalCells / SHEET_CELL_LIMIT);
+  var totalDataCellPercent = (totalDataCells / SHEET_CELL_LIMIT);
   
   // Add Google Sheet level data
   sheetsArray.forEach(function(sheetArray) {
@@ -646,6 +723,55 @@ function expensiveFunctions(sheet) {
   //Logger.log(vols);
   
   return vols;
+}
+
+
+/**
+* Identify charts
+* Returns array of charts for a given sheet (tab) of a Google Sheet
+* @param {string} sheet - single sheet from the Google Sheet to audit
+* @returns {array} array of charts in this sheet
+*/
+function identifyCharts(sheet) {
+  
+  /*
+  // testing
+  var url = "https://docs.google.com/spreadsheets/d/1UwOm6r-g5r1nLSUipBucLgUxzBtf2bkFAcbg0KEdgMc/edit#gid=0";
+  
+  // Open spreadsheet
+  var ss = SpreadsheetApp.openByUrl(url);
+  var sheet = ss.getSheets()[0];
+  */
+  
+  // how many charts in the sheet
+  var charts = sheet.getCharts();
+  
+  return charts.length;
+  
+  /*
+  // other possible options for future releases
+  
+  var chart = charts[0];
+  
+  var ranges = chart.getRanges();
+  var containerInfo = chart.getContainerInfo();
+  
+  // Outputs
+  
+  Logger.log(charts.length);
+  Logger.log("Anchor Column: %s\r\nAnchor Row %s\r\nOffset X %s\r\nOffset Y %s",
+             containerInfo.getAnchorColumn(),
+             containerInfo.getAnchorRow(),
+             containerInfo.getOffsetX(),
+             containerInfo.getOffsetY());
+  Logger.log(chart.getOptions());
+  
+  for (var i in ranges) {
+    var range = ranges[i];
+    Logger.log(range.getA1Notation());
+  }
+  */
+  
 }
 
 
@@ -759,15 +885,22 @@ function toObject(names, values) {
 
 function testData() {
   
-  //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
-  var url = "https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0";
+  var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
+  //var url = "https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0";
   //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
   
   //var url = "https://drive.google.com/file/d/1VX67WduDFnj0tm60LVi5eY0n_Hf3lGum/view?usp=sharing"; // html file
 
-  var sheetsData = listRevisions(url);
+  var testResults = listRevisions(url);
+  var i = 0;
   
-  Logger.log(sheetsData);
+  for (item in testResults) {
+    Logger.log(i);
+    i++;
+  };
+  
+  Logger.log(testResults.items.length);
+  Logger.log(testResults.items);
   
 }
 
@@ -783,7 +916,14 @@ function listRevisions(url) {
   // Need to enable before this works
   // https://developers.google.com/apps-script/guides/services/advanced#enabling_advanced_services
   
+  // set maxResults to 1000
+  // pagination with pageToken to consider
+  
   var revisions = Drive.Revisions.list(fileId);
+  
+  return revisions;
+  
+  /*
   
   if (revisions.items && revisions.items.length > 0) {
     
@@ -836,6 +976,7 @@ function listRevisions(url) {
   } else {
     Logger.log('No revisions found.');
   }
+  */
 }
 
 
