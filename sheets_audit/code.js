@@ -33,6 +33,8 @@
 // --------------------------------
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
+// specific error if you don't have permission, so user can request it
+
 
 
 // --------------------------------
@@ -126,7 +128,79 @@ function getData(request) {
 
   // Get hold of user input parameters
   var url = request.configParams.url;
-  Logger.log(request.configParams);
+  Logger.log("Request Params");
+  Logger.log(request);
+  
+  var choice = request.fields.filter(function(field) {
+    return field.name === "revision_arbNum";
+  });
+  
+  Logger.log(choice);
+  
+  if (choice.length > 0) {
+    // do something specific to return these cells
+    Logger.log("user wants revision data!");
+    
+    // Prepare the schema for the fields requested.
+    var revisionSchema = [];
+    request.fields.forEach(function(field) {
+      for (var i=0; i < sheetsAuditSchema.length; i++) {
+        if (sheetsAuditSchema[i].name == field.name) {
+          revisionSchema.push(sheetsAuditSchema[i]);
+          break;
+        }
+      }
+    });
+    
+    // Prepare the tabular data.
+    var data = [];
+    
+    // get the revision data
+    var revisionData = listAllRevisions(url);
+    
+    revisionData.forEach(function(revision) {
+      var values = [];
+      
+      revisionSchema.forEach(function(field) {
+        switch(field.name) {
+          case 'revision_user_name':
+            values.push(revision.revisionUsername);
+            break;
+          case 'revision_email':
+            values.push(revision.revisionEmail);
+            break;
+          case 'revision_date':
+            values.push(revision.revisionDate);
+            break;
+          case 'revision_date_hour':
+            values.push(revision.revisionDateHour);
+            break;
+          case 'revision_id':
+            values.push(revision.revisionId);
+            break;
+          case 'revision_arbNum':
+            values.push(1);
+            break;
+          default:
+            values.push('');
+        }
+      });
+      data.push({
+        values: values
+      });
+    });
+    
+    return {
+      schema: revisionSchema,
+      rows: data
+    };
+    
+    
+  }
+  else {
+    Logger.log("Non-revision data for this chart");
+  }
+  
   
   // for testing
   //var url = "https://docs.google.com/spreadsheets/d/1UwOm6r-g5r1nLSUipBucLgUxzBtf2bkFAcbg0KEdgMc/edit#gid=0"
@@ -156,143 +230,7 @@ function getData(request) {
   
   var currentTimestamp = new Date();
   
-  /*
-  // Section for keeping archives in an archive Google Sheet
-  //
-  // get user properties
-  var userProperties = PropertiesService.getUserProperties();
-  //Logger.log(userProperties.getProperties());
-  //userProperties.deleteAllProperties(); // TO DO: comment out for running script
-  
-  var propertyIds = userProperties.getKeys();
 
-  //Logger.log(propertyIds);
-  
-  // see if archive sheet exists for this url, by checking if this url id is a key in the properties service
-  var archived = propertyIds.filter(function(key) {
-    return key === sheetId;
-  });
-  
-  //Logger.log(archived);
-  
-  // archive sheet exists
-  if (archived.length > 0) {
-    
-    Logger.log("archive not null");
-    
-    // open the archive sheet to get the archived data
-    var archiveId = userProperties.getProperty(archived[0]);   
-    var archiveSs = SpreadsheetApp.openById(archiveId);
-    var archiveSheet = archiveSs.getActiveSheet();
-    
-    // connector fetches archived data for this url
-    var heads = archiveSheet.getDataRange().offset(0,0,1).getValues()[0];  // https://mashe.hawksey.info/2018/02/google-apps-script-patterns-writing-rows-of-data-to-google-sheets/
-    Logger.log(heads.length);
-    
-    var archiveDataArray = archiveSheet.getRange(2,1,archiveSheet.getLastRow() - 1,archiveSheet.getLastColumn()).getValues();
-    Logger.log("archiveDataArray");
-    Logger.log(archiveDataArray);
-    
-    // connector combines current data with archived data
-    var archiveDataArrayOfObjects = [];
-    for (var i = 0; i < archiveDataArray.length; i++) {
-      var archiveDataObject = toObject(heads, archiveDataArray[i]);  // converts to object with key/value pairs
-      archiveDataArrayOfObjects.push(archiveDataObject);
-    }
-    Logger.log(" ");
-    Logger.log("archiveDataArrayOfObjects");
-    Logger.log(archiveDataArrayOfObjects);
-    
-    // add archive data to sheets data, for Data Studio
-    sheetsData.concat(archiveDataObject);
-    Logger.log(" ");
-    Logger.log("allData");
-    Logger.log(sheetsData);
-    
-    // also saves the latest round of data into the archive sheet
-    // TO DO: need to add a timestamp
-    var archiveTimestamp = new Date();
-    
-    var newRows = sheetsData.map(function(row) {
-      return heads.map(function(cell) {
-        return (cell === "Timestamp") ? archiveTimestamp : row[cell];
-      });
-    });
-    
-    Logger.log(newRows.length);
-    Logger.log(newRows[0].length);
-    Logger.log(newRows);
-    
-    archiveSheet.getRange(archiveSheet.getLastRow() + 1,1,sheetsData.length,heads.length).setValues(newRows);
-    
-  }
-  // no archived data yet
-  else {
-    
-    Logger.log("archive null");
-    
-    // create a new archive spreadsheet
-    // using the Drive API
-    var name = "Archive - " + sheetName;
-    var folderId = "1hu87u1tGOgrIB72is4AxgvMxxjPnGRD1";
-    
-    var resource = {
-      title: name,
-      mimeType: MimeType.GOOGLE_SHEETS,
-      parents: [{ id: folderId }]
-    };
-    
-    var fileJson = Drive.Files.insert(resource);
-    
-    // make note of ID of archive sheet
-    var archiveId = fileJson.id;
-    
-    //var archiveId = "1lfdwMHrkWsrav2i9g1qoDcAicjb_7sCDzQCMtdnEN4Q";
-    //Logger.log(archiveId);
-    
-    // open spreadsheet and add header row
-    var archiveSs = SpreadsheetApp.openById(archiveId);
-    var archiveSheet = archiveSs.getActiveSheet();
-    var headers = Object.keys(sheetsData[0]);
-    var headers = Object.keys(sheetsData[0]);
-    headers.push("Timetsamp");
-    //Logger.log(headers);
-    
-    archiveSheet.getRange(1,1,1,headers.length).setValues([headers]);
-      
-    // add current data to archive sheet
-    var currentTimestamp = new Date();
-    
-    var newRows = sheetsData.map(function(row) {
-      return headers.map(function(cell) {
-        return (cell === "Timestamp") ? currentTimestamp : row[cell];
-      });
-    });
-    
-    archiveSheet.getRange(2,1,sheetsData.length,headers.length).setValues(newRows);
-    
-    // add this archive ID alongside this audit ID to the properties store
-    userProperties.setProperty(sheetId, archiveId);
-    
-  }
-  
-  // -----------------------------------
-  // Auto Trigger section
-  // -----------------------------------
-  // very first time script runs, create time trigger (once a day default)
-  // runs function to:
-  // get all the user properties (audit url + archive url pairs)
-  // gets new round of performance data for audit url
-  // adds to the relevant archive url
-  
-  
-  
-  // -----------------------------------
-  // End trigger section
-  // -----------------------------------
-  
-
-  */
   
   
   
@@ -656,6 +594,35 @@ function toObject(names, values) {
 }
 
 
+/**
+* Convert long date string to short date string YYYYMMDD
+* @param {string} date e.g. format 2017-10-05T15:59:15.905Z
+* @returns {string} date as a string in format YYYYMMDD
+*/
+function dateToString(string) {
+  var year = string.substring(0,4);
+  var month = string.substring(5,7);
+  var day = string.substring(8,10);
+  
+  return year + month + day;
+}
+
+
+/**
+* Convert long date string to YEAR_MONTH_DAY_HOUR YYYYMMDDHH
+* @param {string} date e.g. format 2017-10-05T15:59:15.905Z
+* @returns {string} date as a string in format YYYYMMDDHH
+*/
+function dateToStringHour(string) {
+  var year = string.substring(0,4);
+  var month = string.substring(5,7);
+  var day = string.substring(8,10);
+  var hour = string.substring(11,13);
+  
+  return year + month + day + hour;
+}
+
+
 
 // ----------------------------------------
 // WORKINGS
@@ -663,48 +630,79 @@ function toObject(names, values) {
 
 function testData() {
   
-  var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
-  //var url = "https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0";
   //var url = "https://docs.google.com/spreadsheets/d/1hy4eMF6NJgUegxSP5Yfc50ZoqoKGB7lwvABocM4QZNM/edit#gid=0";
-  
-  //var url = "https://drive.google.com/file/d/1VX67WduDFnj0tm60LVi5eY0n_Hf3lGum/view?usp=sharing"; // html file
+  //var url = "https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0";
+  var url = "https://docs.google.com/spreadsheets/d/1q0LQonsLMIZfG9rd3aa-uu9UhFzps74eaHquBFtMxjc/edit#gid=150755882";
 
-  var testResults = listRevisions(url);
-  var i = 0;
+  var testResults = listAllRevisions(url);
   
-  for (item in testResults) {
-    Logger.log(i);
-    i++;
-  };
-  
-  Logger.log(testResults.items.length);
-  Logger.log(testResults.items);
+  Logger.log(testResults);
+  //Logger.log(testResults.items);
   
 }
 
 
-function listRevisions(url) {
+function listAllRevisions(url) {
   
   var ss = SpreadsheetApp.openByUrl(url);
-  //var doc = DocumentApp.openByUrl(url);
-  
   var fileId = ss.getId();
   
-  // Drive is an advanced Google service
-  // Need to enable before this works
-  // https://developers.google.com/apps-script/guides/services/advanced#enabling_advanced_services
+  var revisionData = [];
   
-  // set maxResults to 1000
   // pagination with pageToken to consider
   
-  var revisions = Drive.Revisions.list(fileId);
+  var revisions = Drive.Revisions.list(fileId, { maxResults: 1000 });
+  var items = revisions.items;
   
-  return revisions;
+  Logger.log(items.length);
+  
+  for (var i = 0; i < items.length; i++) {
+    
+    var revision = {};
+    revision["revisionUsername"] = items[i].lastModifyingUserName;
+    revision["revisionEmail"] = items[i].lastModifyingUser.emailAddress;
+    revision["revisionDate"] = dateToString(items[i].modifiedDate);
+    revision["revisionDateHour"] = dateToStringHour(items[i].modifiedDate);
+    revision["revisionId"] = items[i].id;
+    
+    revisionData.push(revision);
+  }
   
   /*
-  // attempts to delve into revisions, open old sheets, get files sizes
-  // did not really lead anywhere
-  // do not appear to be available
+  // TO DO: keep calling revisions whilst page token exists (really big spreadsheets)
+  if (revisions.nextPageToken > 0) {
+    
+    var token = revisions.nextPageToken; 
+    Logger.log(token);
+    
+    var nextBatch = getRevisionsBatch(fileId,token);
+    
+    Logger.log(nextBatch);
+  }
+  */
+  
+  return revisionData;
+  
+}
+  
+
+// gets the next batch
+function getRevisionsBatch(id, pageToken) {
+  
+  var revisionsBatch = Drive.Revisions.list(fileId, 
+                                       { 
+                                         maxResults: 1000,
+                                         pageToken: pageToken
+                                       });
+  return revisionsBatch;
+  
+}
+
+
+/*
+// attempts to delve into revisions, open old sheets, get files sizes
+// did not really lead anywhere
+// do not appear to be available
   
   if (revisions.items && revisions.items.length > 0) {
     
@@ -757,10 +755,11 @@ function listRevisions(url) {
   } else {
     Logger.log('No revisions found.');
   }
-  */
-}
+*/
 
 
+// get data for a particular revision
+// still not giving me anything extra
 function getRevision(fileId, revisionId) {
   
   var request = Drive.Revisions.get(fileId, revisionId);
@@ -804,7 +803,145 @@ function getChanges(fileId) {
   Logger.log(request.items[1]);
   
 }
-                        
+
+
+  /*
+  // Section for keeping archives in an archive Google Sheet
+  //
+  // get user properties
+  var userProperties = PropertiesService.getUserProperties();
+  //Logger.log(userProperties.getProperties());
+  //userProperties.deleteAllProperties(); // TO DO: comment out for running script
+  
+  var propertyIds = userProperties.getKeys();
+
+  //Logger.log(propertyIds);
+  
+  // see if archive sheet exists for this url, by checking if this url id is a key in the properties service
+  var archived = propertyIds.filter(function(key) {
+    return key === sheetId;
+  });
+  
+  //Logger.log(archived);
+  
+  // archive sheet exists
+  if (archived.length > 0) {
+    
+    Logger.log("archive not null");
+    
+    // open the archive sheet to get the archived data
+    var archiveId = userProperties.getProperty(archived[0]);   
+    var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveSheet = archiveSs.getActiveSheet();
+    
+    // connector fetches archived data for this url
+    var heads = archiveSheet.getDataRange().offset(0,0,1).getValues()[0];  // https://mashe.hawksey.info/2018/02/google-apps-script-patterns-writing-rows-of-data-to-google-sheets/
+    Logger.log(heads.length);
+    
+    var archiveDataArray = archiveSheet.getRange(2,1,archiveSheet.getLastRow() - 1,archiveSheet.getLastColumn()).getValues();
+    Logger.log("archiveDataArray");
+    Logger.log(archiveDataArray);
+    
+    // connector combines current data with archived data
+    var archiveDataArrayOfObjects = [];
+    for (var i = 0; i < archiveDataArray.length; i++) {
+      var archiveDataObject = toObject(heads, archiveDataArray[i]);  // converts to object with key/value pairs
+      archiveDataArrayOfObjects.push(archiveDataObject);
+    }
+    Logger.log(" ");
+    Logger.log("archiveDataArrayOfObjects");
+    Logger.log(archiveDataArrayOfObjects);
+    
+    // add archive data to sheets data, for Data Studio
+    sheetsData.concat(archiveDataObject);
+    Logger.log(" ");
+    Logger.log("allData");
+    Logger.log(sheetsData);
+    
+    // also saves the latest round of data into the archive sheet
+    // TO DO: need to add a timestamp
+    var archiveTimestamp = new Date();
+    
+    var newRows = sheetsData.map(function(row) {
+      return heads.map(function(cell) {
+        return (cell === "Timestamp") ? archiveTimestamp : row[cell];
+      });
+    });
+    
+    Logger.log(newRows.length);
+    Logger.log(newRows[0].length);
+    Logger.log(newRows);
+    
+    archiveSheet.getRange(archiveSheet.getLastRow() + 1,1,sheetsData.length,heads.length).setValues(newRows);
+    
+  }
+  // no archived data yet
+  else {
+    
+    Logger.log("archive null");
+    
+    // create a new archive spreadsheet
+    // using the Drive API
+    var name = "Archive - " + sheetName;
+    var folderId = "1hu87u1tGOgrIB72is4AxgvMxxjPnGRD1";
+    
+    var resource = {
+      title: name,
+      mimeType: MimeType.GOOGLE_SHEETS,
+      parents: [{ id: folderId }]
+    };
+    
+    var fileJson = Drive.Files.insert(resource);
+    
+    // make note of ID of archive sheet
+    var archiveId = fileJson.id;
+    
+    //var archiveId = "1lfdwMHrkWsrav2i9g1qoDcAicjb_7sCDzQCMtdnEN4Q";
+    //Logger.log(archiveId);
+    
+    // open spreadsheet and add header row
+    var archiveSs = SpreadsheetApp.openById(archiveId);
+    var archiveSheet = archiveSs.getActiveSheet();
+    var headers = Object.keys(sheetsData[0]);
+    var headers = Object.keys(sheetsData[0]);
+    headers.push("Timetsamp");
+    //Logger.log(headers);
+    
+    archiveSheet.getRange(1,1,1,headers.length).setValues([headers]);
+      
+    // add current data to archive sheet
+    var currentTimestamp = new Date();
+    
+    var newRows = sheetsData.map(function(row) {
+      return headers.map(function(cell) {
+        return (cell === "Timestamp") ? currentTimestamp : row[cell];
+      });
+    });
+    
+    archiveSheet.getRange(2,1,sheetsData.length,headers.length).setValues(newRows);
+    
+    // add this archive ID alongside this audit ID to the properties store
+    userProperties.setProperty(sheetId, archiveId);
+    
+  }
+  
+  // -----------------------------------
+  // Auto Trigger section
+  // -----------------------------------
+  // very first time script runs, create time trigger (once a day default)
+  // runs function to:
+  // get all the user properties (audit url + archive url pairs)
+  // gets new round of performance data for audit url
+  // adds to the relevant archive url
+  
+  
+  
+  // -----------------------------------
+  // End trigger section
+  // -----------------------------------
+  
+
+  */
                         
                         
 // https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0?revision=1
@@ -829,6 +966,10 @@ https://developers.google.com/apps-script/guides/services/advanced
 
 Advanced Drive service Files API:
 https://developers.google.com/drive/v2/reference/files
+
+// Drive is an advanced Google service
+// Need to enable before this works
+// https://developers.google.com/apps-script/guides/services/advanced#enabling_advanced_services
 
 Advanced Drive service Files API - Changes:
 https://developers.google.com/drive/v2/reference/changes
