@@ -216,5 +216,75 @@ var sheetsAuditSchema = [
       semanticType: 'DURATION',
       isReaggregatable: false
     }
+  },
+  {
+    name: 'revision_user_name',
+    label: 'Revision User Name',
+    description: 'Name of the user who made this revision',
+    dataType: 'STRING',
+    group: 'revision',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'TEXT'
+    }
+  },
+  {
+    name: 'revision_email',
+    label: 'Revision Email',
+    description: 'Email of the user who made this revision',
+    dataType: 'STRING',
+    group: 'revision',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'TEXT'
+    }
+  },
+  {
+    name: 'revision_date',
+    label: 'Revision Date',
+    description: 'The date of a specific revision (in format YYYYMMDD eg 20170314)',
+    dataType: 'STRING',
+    group: 'revision',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'YEAR_MONTH_DAY',
+      semanticGroup: 'DATETIME'
+    }
+  },
+  {
+    name: 'revision_date_hour',
+    label: 'Revision Date Hour',
+    description: 'The date and hour of a specific revision (in format YYYYMMDDHH eg 2017031415)',
+    dataType: 'STRING',
+    group: 'revision',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'YEAR_MONTH_DAY_HOUR',
+      semanticGroup: 'DATETIME'
+    }
+  },
+  {
+    name: 'revision_id',
+    label: 'Revision ID',
+    description: 'ID of this revision',
+    dataType: 'STRING',
+    group: 'revision',
+    semantics: {
+      conceptType: 'DIMENSION',
+      semanticType: 'TEXT'
+    }
+  },
+  {
+    name: 'revision_arbNum',
+    label: 'Revision Count',
+    description: 'Fixed number 1 for this revision for aggregations',
+    dataType: 'NUMBER',
+    group: 'revision',
+    semantics: {
+      conceptType: 'METRIC',
+      semanticType: 'NUMBER',
+      isReaggregatable: true
+    }
   }
+  
 ];
