@@ -4,7 +4,6 @@
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
 // specific error if you don't have permission, so user can request it
-// implement caching to improve performance for user
 
 
 /** 
@@ -123,7 +122,6 @@ function getData(request) {
     // get the revision fields data
     // check for cached data first
     var cacheKey = "revisionFields" + url;
-    Logger.log(cacheKey);
     var revisionData = getCachedRevisions(url, cacheKey);
     
     revisionData.forEach(function(revision) {
@@ -171,7 +169,6 @@ function getData(request) {
     // fetch the current data
     // check for cached data first
     var cacheKey = "sheetsFields" + url;
-    Logger.log(cacheKey);
     var sheetsData = getCachedSheetsData(url, cacheKey);
     
     // Prepare the schema for the fields requested.
@@ -290,8 +287,8 @@ function getCachedSheetsData(url, cacheKey) {
   var cachedData = cache.get(cacheKey);
   
   if (cachedData !== null) {
-    //var response = cachedData;
-    Logger.log("Using cached data!!");
+    Logger.log("Using cached data");
+    
     try {
       var response = JSON.parse(cachedData);
     }
@@ -301,6 +298,7 @@ function getCachedSheetsData(url, cacheKey) {
   }
   else {
     Logger.log("Fetching new data");
+    
     try {
       var response = getSheetsData(url);
       cache.put(cacheKey, JSON.stringify(response));
@@ -542,8 +540,8 @@ function getCachedRevisions(url, cacheKey) {
   var cachedData = cache.get(cacheKey);
   
   if (cachedData !== null) {
-    //var response = cachedData;
-    Logger.log("Using cached data!!");
+    Logger.log("Using cached data");
+    
     try {
       var response = JSON.parse(cachedData);
     }
@@ -553,6 +551,7 @@ function getCachedRevisions(url, cacheKey) {
   }
   else {
     Logger.log("Fetching new data");
+    
     try {
       var response = listAllRevisions(url);
       cache.put(cacheKey, JSON.stringify(response));
