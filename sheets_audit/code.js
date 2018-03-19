@@ -4,8 +4,6 @@
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
 // specific error if you don't have permission, so user can request it
-// refactor the sheets/revision logic
-// specific error if you try to mix revision history with sheet data
 // implement caching to improve performance for user
 
 
@@ -91,6 +89,8 @@ function getData(request) {
   // Get hold of user input parameters
   var url = request.configParams.url;
   var fields = request.fields;
+  
+  // create an array of field names for handling revision v sheets logic
   var output = [];
   
   for (var i = 0; i < fields.length; i++) {
@@ -101,27 +101,10 @@ function getData(request) {
     return a.indexOf(x) == i;
   });
   
-  Logger.log("Request Params");
-  Logger.log(request);
   
-  Logger.log("output array");
-  Logger.log(output);
-  
-  // TO DO
-  // make the filter match any of the revision fields
-  // You can have revision dimensions + metrics
-  // OR Sheet dimensions + metrics
-  // BUT not both
-  // maybe a better, quicker way of doing this step altogether
-  // want to just know if the requested fields are any of the revision fields
-  
-  // Revision only:
-  //{configParams={url=}, fields=[{name=revision_arbNum}, {name=revision_email}]}
-  Logger.log(output);
-  Logger.log(output[0]);
-  
+  // Process request for revision data
   if (output.length === 1 && output[0] === "revision") {
-    Logger.log("Revisions stuff!");
+    Logger.log("Revision fields data requested.");
     
     // Prepare the schema for the fields requested.
     var revisionSchema = [];
@@ -138,8 +121,14 @@ function getData(request) {
     // Prepare the tabular data.
     var data = [];
     
-    // get the revision data
-    var revisionData = listAllRevisions(url);
+    // get the revision fields data
+    // check for cached data first
+    var cacheKey = "revisionFields" + url; // TO DO
+    
+    var revisionData = getCachedRevisions(url, cacheKey);
+    
+      
+    //var revisionData = listAllRevisions(url);
     
     revisionData.forEach(function(revision) {
       var values = [];
@@ -180,9 +169,7 @@ function getData(request) {
     };
   }
   
-  // Sheets only:
-  // none of the field names start with word "revision"
-  //{configParams={url=}, fields=[{name=sheet_name}, {name=sheet_rows}]}
+  // Process request for Sheets fields data
   else if (output.indexOf("revision") === -1) {
     Logger.log("Sheets stuff only!");
     
@@ -301,14 +288,10 @@ function getData(request) {
     };
   }
   
-  // Mixed error only:
-  //{configParams={url=}, fields=[{name=revision_email}, {name=total_cell_percentage}]}
+  // Mixed revision and Sheets fields error:
   else {
-    Logger.log("Mix of sheet stuff and revision stuff");
-    Logger.log("Want to return a custom error message");
-    
     // return custom error message
-    // TO DO
+    throw new Error("DS_USER: Cannot combine Revision fields data and Sheets fields data in the same chart.");
   }
     
   
@@ -754,6 +737,41 @@ function identifyOtherFunctions(sheet) {
   }  
   return [arrayCounter, vlookupCounter];
 
+}
+
+
+/**
+* Get revision history data for this url
+* Returns array of revision data for a given Google Sheet url
+* @param {string} url - url of the Google Sheet to audit
+* @returns {array} of objects containing revision username, email, date, date+hour and Id.
+*/
+function getCachedRevisions(url, cacheKey) {
+  
+  var cache = CacheService.getUserCache();
+  var cachedData = cache.get(cacheKey);
+  
+  if (cachedData !== null) {
+    //var response = cachedData;
+    Logger.log("Using cached data!!");
+    try {
+      var response = JSON.parse(cachedData);
+    }
+    catch(e) {
+      throw new Error("DS_USER: Problem parsing cached data. Please contact connector administrator.");
+    }
+  }
+  else {
+    Logger.log("Fetching new data");
+    try {
+      var response = listAllRevisions(url);
+      cache.put(cacheKey, JSON.stringify(response));
+    }
+    catch(e) {
+      throw new Error("DS_USER: Cannot retrieve Drive Revision data.");
+    }
+  }
+  return response;
 }
 
 
