@@ -1,51 +1,12 @@
 // --------------------------------
-// Program flow:
-// --------------------------------
-// user enters url in config step - DONE
-// connector fetches current performance data for sheet - DONE (except extra metrics)
-// connector finds the ID of this url - DONE
-// connector checks for this ID in cache or Properties service, if there returns the archive spreadsheet url/id - DONE
-// if archive url/id exists
-//   connector fetches archived data for this url
-//   also saves the latest round of data into the archive sheet
-//   connector combines current data with archived data
-//   returns full data to DS
-// if no archive url/id exists: 
-//   connector creates new Google Sheet for archiving, just for this audit url
-//   connector copies new data into this google sheet
-//   connector creates a daily trigger to fetch data for this url (and any others that are in this users cache)
-//   connector stores the audit url and the archive url in users cache
-//   returns the new row of data to DS
-// want to implement a caching system to improve performance for user
-
-
-// --------------------------------
-// other performance checks:
-// --------------------------------
-// conditional formatting
-// index/match formulas
-// number of charts - DONE
-// anything else from the spreadsheet api (not the built in service)
-
-
-// --------------------------------
-// Other to do items:
+// To do items:
 // --------------------------------
 // Error handling if incorrect url entered
 // don't have permission, not a google sheet url, blank, etc.
 // specific error if you don't have permission, so user can request it
+// refactor the sheets/revision logic
 // specific error if you try to mix revision history with sheet data
-
-
-
-// --------------------------------
-// Wishlist:
-// --------------------------------
-// revision history by date
-// revision history by user
-// github contribution chart?
-// get editors: https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet#geteditors
-
+// implement caching to improve performance for user
 
 
 /** 
@@ -129,13 +90,231 @@ function getData(request) {
 
   // Get hold of user input parameters
   var url = request.configParams.url;
+  var fields = request.fields;
+  var output = [];
+  
+  for (var i = 0; i < fields.length; i++) {
+    output.push(fields[i].name.substr(0,8));
+  }
+  
+  output = output.filter(function(x, i, a) {
+    return a.indexOf(x) == i;
+  });
+  
   Logger.log("Request Params");
   Logger.log(request);
   
+  Logger.log("output array");
+  Logger.log(output);
+  
   // TO DO
   // make the filter match any of the revision fields
+  // You can have revision dimensions + metrics
+  // OR Sheet dimensions + metrics
+  // BUT not both
   // maybe a better, quicker way of doing this step altogether
   // want to just know if the requested fields are any of the revision fields
+  
+  // Revision only:
+  //{configParams={url=}, fields=[{name=revision_arbNum}, {name=revision_email}]}
+  Logger.log(output);
+  Logger.log(output[0]);
+  
+  if (output.length === 1 && output[0] === "revision") {
+    Logger.log("Revisions stuff!");
+    
+    // Prepare the schema for the fields requested.
+    var revisionSchema = [];
+    
+    request.fields.forEach(function(field) {
+      for (var i=0; i < sheetsAuditSchema.length; i++) {
+        if (sheetsAuditSchema[i].name == field.name) {
+          revisionSchema.push(sheetsAuditSchema[i]);
+          break;
+        }
+      }
+    });
+    
+    // Prepare the tabular data.
+    var data = [];
+    
+    // get the revision data
+    var revisionData = listAllRevisions(url);
+    
+    revisionData.forEach(function(revision) {
+      var values = [];
+      
+      revisionSchema.forEach(function(field) {
+        switch(field.name) {
+          case 'revision_user_name':
+            values.push(revision.revisionUsername);
+            break;
+          case 'revision_email':
+            values.push(revision.revisionEmail);
+            break;
+          case 'revision_date':
+            values.push(revision.revisionDate);
+            break;
+          case 'revision_date_hour':
+            values.push(revision.revisionDateHour);
+            break;
+          case 'revision_id':
+            values.push(revision.revisionId);
+            break;
+          case 'revision_arbNum':
+            values.push(1);
+            break;
+          default:
+            values.push('');
+        }
+      });
+      data.push({
+        values: values
+      });
+    });
+    
+    // return the revision data
+    return {
+      schema: revisionSchema,
+      rows: data
+    };
+  }
+  
+  // Sheets only:
+  // none of the field names start with word "revision"
+  //{configParams={url=}, fields=[{name=sheet_name}, {name=sheet_rows}]}
+  else if (output.indexOf("revision") === -1) {
+    Logger.log("Sheets stuff only!");
+    
+    // get start time
+    var startTime = new Date().getTime();
+    
+    // Open spreadsheet
+    var ss = SpreadsheetApp.openByUrl(url);
+    var fileName = ss.getName();
+    var fileId = ss.getId();
+    var sheets = ss.getSheets();
+    
+    // fetch the current data
+    var sheetsData = getSheetsData(sheets);
+    Logger.log(sheetsData);
+    
+    // get load time
+    // this is just a proxy value, based on how long it took Data Studio to get data 
+    var endTime = new Date().getTime();
+    
+    var sheetLoadTime = (endTime - startTime) / 1000; 
+    
+    var currentTimestamp = new Date();
+    
+    // Prepare the schema for the fields requested.
+    var dataSchema = [];
+    request.fields.forEach(function(field) {
+      for (var i=0; i < sheetsAuditSchema.length; i++) {
+        if (sheetsAuditSchema[i].name == field.name) {
+          dataSchema.push(sheetsAuditSchema[i]);
+          break;
+        }
+      }
+    });
+    
+    // Prepare the tabular data.
+    var data = [];
+    
+    sheetsData.forEach(function(sheetData) {
+      var values = [];
+      
+      dataSchema.forEach(function(field) {
+        switch(field.name) {
+          case 'file_name':
+            values.push(fileName);
+            break;
+          case 'sheet_name':
+            values.push(sheetData.name);
+            break;
+          case 'sheet_cells':
+            values.push(sheetData.sheetCells);
+            break;
+          case 'sheet_rows':
+            values.push(sheetData.sheetRows);
+            break;
+          case 'sheet_cols':
+            values.push(sheetData.sheetCols);
+            break;
+          case 'sheet_data_cells':
+            values.push(sheetData.sheetDataCells);
+            break;
+          case 'now_func_counter':
+            values.push(sheetData.nowFuncCount);
+            break;
+          case 'today_func_counter':
+            values.push(sheetData.todayFuncCount);
+            break;
+          case 'rand_func_counter':
+            values.push(sheetData.randFuncCount);
+            break;
+          case 'randbetween_func_counter':
+            values.push(sheetData.randbetweenFuncCount);
+            break;
+          case 'array_func_counter':
+            values.push(sheetData.arrayFuncCount);
+            break;
+          case 'vlookup_func_counter':
+            values.push(sheetData.vlookupFuncCount);
+            break;
+          case 'chart_counter':
+            values.push(sheetData.chartCount);
+            break;
+          case 'total_cells':
+            values.push(sheetData.totalCells);
+            break;
+          case 'total_data_cells':
+            values.push(sheetData.totalDataCells);
+            break;
+          case 'number_sheets':
+            values.push(sheetData.numSheets);
+            break;
+          case 'total_cell_percentage':
+            values.push(sheetData.totalCellPercent);
+            break;
+          case 'total_cell_percentage_100':
+            values.push(sheetData.totalCellPercent);
+            break;
+          case 'total_data_cell_percentage':
+            values.push(sheetData.totalDataCellPercent);
+            break;
+          case 'sheet_load_time':
+            values.push(sheetLoadTime);
+            break;
+          default:
+            values.push('');
+        }
+      });
+      data.push({
+        values: values
+      });
+    });
+    
+    return {
+      schema: dataSchema,
+      rows: data
+    };
+  }
+  
+  // Mixed error only:
+  //{configParams={url=}, fields=[{name=revision_email}, {name=total_cell_percentage}]}
+  else {
+    Logger.log("Mix of sheet stuff and revision stuff");
+    Logger.log("Want to return a custom error message");
+    
+    // return custom error message
+    // TO DO
+  }
+    
+  
+  
+  
+  /*
   var choice = request.fields.filter(function(field) {
     return field.name === "revision_arbNum";
   });
@@ -237,10 +416,6 @@ function getData(request) {
   
   var currentTimestamp = new Date();
   
-
-  
-  
-  
   // -----------------------------------
   // DS Section - uncomment
   // -----------------------------------
@@ -337,6 +512,7 @@ function getData(request) {
     schema: dataSchema,
     rows: data
   };
+  */
   
 }
   
@@ -685,7 +861,8 @@ function testData() {
   //var url = "https://docs.google.com/spreadsheets/d/1NiIpq4LUQrhF-zgmt8mjd6BFL79NcHyn2OrxdXGrO60/edit#gid=0";
   var url = "https://docs.google.com/spreadsheets/d/1q0LQonsLMIZfG9rd3aa-uu9UhFzps74eaHquBFtMxjc/edit#gid=150755882";
 
-  var testResults = listAllRevisions(url);
+  var revisionsData = listAllRevisions(url);
+  
   
   Logger.log(testResults);
   //Logger.log(testResults.items);
@@ -1006,5 +1183,10 @@ https://github.com/google/re2/blob/master/doc/syntax.txt
 Non-capturing groups explainer:
 https://groups.google.com/forum/#!topic/golang-nuts/8Xmvar_ptcU
 
+List a file's comments:
+https://developers.google.com/drive/v3/reference/comments/list
+
+Replies to comments:
+https://developers.google.com/drive/v3/reference/replies/list
 
 */
