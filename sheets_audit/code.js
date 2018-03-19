@@ -104,7 +104,6 @@ function getData(request) {
   
   // Process request for revision data
   if (output.length === 1 && output[0] === "revision") {
-    Logger.log("Revision fields data requested.");
     
     // Prepare the schema for the fields requested.
     var revisionSchema = [];
@@ -123,12 +122,9 @@ function getData(request) {
     
     // get the revision fields data
     // check for cached data first
-    var cacheKey = "revisionFields" + url; // TO DO
-    
+    var cacheKey = "revisionFields" + url;
+    Logger.log(cacheKey);
     var revisionData = getCachedRevisions(url, cacheKey);
-    
-      
-    //var revisionData = listAllRevisions(url);
     
     revisionData.forEach(function(revision) {
       var values = [];
@@ -171,28 +167,12 @@ function getData(request) {
   
   // Process request for Sheets fields data
   else if (output.indexOf("revision") === -1) {
-    Logger.log("Sheets stuff only!");
-    
-    // get start time
-    var startTime = new Date().getTime();
-    
-    // Open spreadsheet
-    var ss = SpreadsheetApp.openByUrl(url);
-    var fileName = ss.getName();
-    var fileId = ss.getId();
-    var sheets = ss.getSheets();
     
     // fetch the current data
-    var sheetsData = getSheetsData(sheets);
-    Logger.log(sheetsData);
-    
-    // get load time
-    // this is just a proxy value, based on how long it took Data Studio to get data 
-    var endTime = new Date().getTime();
-    
-    var sheetLoadTime = (endTime - startTime) / 1000; 
-    
-    var currentTimestamp = new Date();
+    // check for cached data first
+    var cacheKey = "sheetsFields" + url;
+    Logger.log(cacheKey);
+    var sheetsData = getCachedSheetsData(url, cacheKey);
     
     // Prepare the schema for the fields requested.
     var dataSchema = [];
@@ -214,7 +194,7 @@ function getData(request) {
       dataSchema.forEach(function(field) {
         switch(field.name) {
           case 'file_name':
-            values.push(fileName);
+            values.push(sheetData.fileName);
             break;
           case 'sheet_name':
             values.push(sheetData.name);
@@ -271,7 +251,7 @@ function getData(request) {
             values.push(sheetData.totalDataCellPercent);
             break;
           case 'sheet_load_time':
-            values.push(sheetLoadTime);
+            values.push(sheetData.sheetLoadTime);
             break;
           default:
             values.push('');
@@ -298,12 +278,55 @@ function getData(request) {
   
 
 /**
+* Get Sheets Data from Cache
+* Returns array of data for a given sheet url
+* @param {string} url - the Google Sheet url to audit
+* @param {string} cacheKey - the cache key for this url for Sheets Fields
+* @returns {array} sheetsArray - data associated with this Sheet url
+*/
+function getCachedSheetsData(url, cacheKey) {
+  
+  var cache = CacheService.getUserCache();
+  var cachedData = cache.get(cacheKey);
+  
+  if (cachedData !== null) {
+    //var response = cachedData;
+    Logger.log("Using cached data!!");
+    try {
+      var response = JSON.parse(cachedData);
+    }
+    catch(e) {
+      throw new Error("DS_USER: Problem parsing cached data. Please contact connector administrator.");
+    }
+  }
+  else {
+    Logger.log("Fetching new data");
+    try {
+      var response = getSheetsData(url);
+      cache.put(cacheKey, JSON.stringify(response));
+    }
+    catch(e) {
+      throw new Error("DS_USER: Cannot retrieve Sheets data.");
+    }
+  }
+  return response;
+}
+
+/**
 * Get Sheets Data
 * Returns array of data for a given sheet url
 * @param {string} sheets - the Google Sheet object to audit
 * @returns {array} sheetsArray - data associated with this Sheet url
 */
-function getSheetsData(sheets) {
+function getSheetsData(url) {
+  
+  // get start time
+  var startTime = new Date().getTime();
+  
+  // Open spreadsheet
+  var ss = SpreadsheetApp.openByUrl(url);
+  var fileName = ss.getName();
+  var sheets = ss.getSheets();
   
   var sheetsArray = [];
   var numSheets = 0;
@@ -375,6 +398,11 @@ function getSheetsData(sheets) {
   var totalCellPercent = (totalCells / SHEET_CELL_LIMIT);
   var totalDataCellPercent = (totalDataCells / SHEET_CELL_LIMIT);
   
+  // get load time
+  // this is just a proxy value, based on how long it took Data Studio to get data 
+  var endTime = new Date().getTime();
+  var sheetLoadTime = (endTime - startTime) / 1000;
+  
   // Add Google Sheet level data
   sheetsArray.forEach(function(sheetArray) {
     sheetArray["totalCells"] = totalCells;
@@ -382,6 +410,8 @@ function getSheetsData(sheets) {
     sheetArray["numSheets"] = numSheets;
     sheetArray["totalCellPercent"] = totalCellPercent;
     sheetArray["totalDataCellPercent"] = totalDataCellPercent;
+    sheetArray["fileName"] = fileName;
+    sheetArray["sheetLoadTime"] = sheetLoadTime;
   });
   
   // return all the data
@@ -403,9 +433,6 @@ function expensiveFunctions(sheet) {
   for (var i = 0; i < arrs.length; i++) {
     vols.push(arrs[i]);
   }
-  
-  //Logger.log("vols");
-  //Logger.log(vols);
   
   return vols;
 }
@@ -503,10 +530,11 @@ function identifyOtherFunctions(sheet) {
 
 
 /**
-* Get revision history data for this url
-* Returns array of revision data for a given Google Sheet url
-* @param {string} url - url of the Google Sheet to audit
-* @returns {array} of objects containing revision username, email, date, date+hour and Id.
+* Get Revisions Data from Cache
+* Returns array of revisions data for a given sheet url
+* @param {string} url - the Google Sheet url to audit
+* @param {string} cacheKey - the cache key for this url for Revisions Fields
+* @returns {array} array - revisions data associated with this Sheet url
 */
 function getCachedRevisions(url, cacheKey) {
   
