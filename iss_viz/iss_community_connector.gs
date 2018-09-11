@@ -1,5 +1,6 @@
-// Google Data Studio Community Connector, using the Open Notify API
+// Test of Google Data Connector, using the Open Notify API
 // http://api.open-notify.org/iss-now.json
+
 
 function getConfig(request) {
   var config = {
@@ -7,6 +8,7 @@ function getConfig(request) {
   };
   return config;
 };
+
 
 var issSchema = [
   {
@@ -33,15 +35,6 @@ var issSchema = [
       conceptType: 'METRIC'
     }
   },
-  // this arbitrary number is fixed and used to give a value to the location of the space station for plotting on the Geo map
-  {
-    name: 'arbNum',
-    label: 'Arbitrary Number',
-    dataType: 'NUMBER',
-    semantics: {
-      conceptType: 'METRIC'
-    }
-  },
   {
     name: 'position',
     label: 'Position',
@@ -60,12 +53,15 @@ var issSchema = [
   }
 ];
 
+
 function getSchema(request) {
   return {schema: issSchema};
 };
 
+
 function getData(request) {
-  Logger.log(request);
+  
+  //Logger.log(request.scriptParams);
   
   var dataSchema = [];
   
@@ -78,17 +74,19 @@ function getData(request) {
     }
   });
   
-  Logger.log(dataSchema);
+  //Logger.log(dataSchema);
   
   var url = 'http://api.open-notify.org/iss-now.json';
   var response = JSON.parse(UrlFetchApp.fetch(url));
   
-  // Logger.log(response); // what comes back from the Open Notify API
+  Logger.log(response); // what comes back from the Open Notify API
   // {iss_position={latitude=-9.3766, longitude=-128.4282}, message=success, timestamp=1502477201}
   
   // turn epoch timestamp into human readable date
   var date = new Date(response.timestamp * 1000);
   var dsDate = date.toISOString().slice(0,10).replace(/-/g,"");
+  
+  
   
   // select items from the response data to return to Data Studio
   var data = [];
@@ -105,9 +103,6 @@ function getData(request) {
       case 'longitude':
         values.push(response.iss_position.longitude);
         break;
-      case 'arbNum':
-        values.push('1');
-        break;
       case 'position':
         values.push(response.iss_position.latitude + "," + response.iss_position.longitude);
         break;
@@ -118,19 +113,18 @@ function getData(request) {
         values.push('');
     }
   });
-  Logger.log(values);
     
   data.push({
     values: values
   });
-  
-  Logger.log(data); // show the data that is being sent to Data Studio
 
   return {
     schema: dataSchema,
     rows: data
   };
-};
+  
+}
+
 
 function getAuthType() {
   var response = {
@@ -138,5 +132,3 @@ function getAuthType() {
   };
   return response;
 }
-
-
