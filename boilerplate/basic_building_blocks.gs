@@ -1,5 +1,6 @@
 /**
- * The Building Blocks required for Data Studio Community Connector projects
+ * The Building Blocks 
+ * Required for Data Studio Community Connector projects
  */
 
 /**

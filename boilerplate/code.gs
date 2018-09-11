@@ -1,5 +1,6 @@
 /**
- * Boilerplate code required for Data Studio Community Connector projects
+ * Boilerplate code 
+ * Required for Data Studio Community Connector projects
  */
 
 
