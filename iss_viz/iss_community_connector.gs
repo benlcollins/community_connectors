@@ -12,10 +12,16 @@
 
 /**
 * Returns Data Studio configuration settings
-* @param {object} request - the request variable from Data Studio
-* @returns {array} of configuration settings
+*
+* @param {object} javaScript object containing the config request parameters
+*
+* @returns {array} javaScript object representing the connector configuration that should be displayed to the user.
 */
 function getConfig(request) {
+  
+  Logger.log("getConfig request");
+  Logger.log(request);
+  
   var config = {
     configParams: []
   };
@@ -34,7 +40,7 @@ var issSchema = [
     dataType: 'NUMBER',
     semantics: {
       conceptType: 'DIMENSION',
-      sematicType: 'DURATION',
+      semanticType: 'DURATION',
     }
   },
   {
@@ -44,7 +50,7 @@ var issSchema = [
     dataType: 'NUMBER',
     semantics: {
       conceptType: 'METRIC',
-      sematicType: 'NUMBER',
+      semanticType: 'NUMBER',
       isReaggregatable: false
     }
   },
@@ -55,7 +61,7 @@ var issSchema = [
     dataType: 'NUMBER',
     semantics: {
       conceptType: 'METRIC',
-      sematicType: 'NUMBER',
+      semanticType: 'NUMBER',
       isReaggregatable: false
     }
   },
@@ -64,9 +70,10 @@ var issSchema = [
     label: 'Position',
     description: 'Combination of the latitude and longitude fields',
     dataType: 'STRING',
+    isDefault: true,
     semantics: {
       conceptType: 'DIMENSION',
-      sematicType: 'LATITUDE_LONGITUDE'
+      semanticType: 'LATITUDE_LONGITUDE'
     }
   },
   {
@@ -76,7 +83,7 @@ var issSchema = [
     dataType: 'STRING',
     semantics: {
       conceptType: 'DIMENSION',
-      sematicType: 'YEAR_MONTH_DAY'
+      semanticType: 'YEAR_MONTH_DAY'
     }
   }
 ];
@@ -84,10 +91,16 @@ var issSchema = [
 
 /**
 * Returns Data Studio schema
-* @param {object} request - the request variable from Data Studio
-* @returns {array} - the connector Schema
+*
+* @param {object} javaScript object containing the schema request parameters.
+*
+* @returns {array} javaScript object representing the schema for the given request.
 */
 function getSchema(request) {
+  
+  Logger.log("getSchema request");
+  Logger.log(request);
+  
   return {schema: issSchema};
 };
 
@@ -95,11 +108,17 @@ function getSchema(request) {
 /**
 * Get Data
 * Returns Data to Data Studio based on the request
-* @param {object} request - the request variable from Data Studio
-* @returns {array} with the schema and the data values, for Data Studio
-*    in the form: [{values=[...]},{values=[...]},...]
+*
+* @param {object} request parameter contains user provided values and additional information 
+* that can be used to complete the data request
+* 
+* @returns {array} javaScript object that contains the schema and data for the given request.
+* returns tabular data that satisfies the given request. The schema for the tabular data is included in the response.
 */
 function getData(request) {
+  
+  Logger.log("getData request");
+  Logger.log(request);
   
   // Set the url
   var url = 'http://api.open-notify.org/iss-now.json';
@@ -156,6 +175,9 @@ function getData(request) {
   data.push({
     values: values
   });
+  
+  Logger.log("data");
+  Logger.log(data);
 
   return {
     schema: dataSchema,
@@ -167,6 +189,7 @@ function getData(request) {
 
 /**
 * Authentication
+*
 * @returns {object} containing the authentication method used by the connector.
 */
 function getAuthType() {
