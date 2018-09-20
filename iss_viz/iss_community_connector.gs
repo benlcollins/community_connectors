@@ -114,7 +114,7 @@ function getSchema(request) {
 */
 function getData(request) {
   
-  Logger.log("getData request");
+  Logger.log("Request from Data Studio");
   Logger.log(request);
   
   // Set the url
@@ -172,8 +172,11 @@ function getData(request) {
   data.push({
     values: values
   });
+    
+  Logger.log("Schema returned to Data Studio");
+  Logger.log(dataSchema);
   
-  Logger.log("data");
+  Logger.log("Data returned to Data Studio");
   Logger.log(data);
 
   return {
