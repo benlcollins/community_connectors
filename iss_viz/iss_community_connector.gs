@@ -19,13 +19,12 @@
 */
 function getConfig(request) {
   
-  Logger.log("getConfig request");
-  Logger.log(request);
-  
   var config = {
     configParams: []
   };
+
   return config;
+
 };
 
 
@@ -98,10 +97,8 @@ var issSchema = [
 */
 function getSchema(request) {
   
-  Logger.log("getSchema request");
-  Logger.log(request);
-  
   return {schema: issSchema};
+
 };
 
 
@@ -193,8 +190,11 @@ function getData(request) {
 * @returns {object} containing the authentication method used by the connector.
 */
 function getAuthType() {
+  
   var response = {
     "type": "NONE"
   };
+
   return response;
+  
 }
