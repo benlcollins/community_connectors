@@ -1,0 +1,11 @@
+[18-09-20 16:45:29:948 EDT] Request from Data Studio
+[18-09-20 16:45:29:948 EDT] {fields=[{name=latitude}, {name=position}]}
+
+[18-09-20 16:45:30:150 EDT] Response from API
+[18-09-20 16:45:30:151 EDT] {iss_position={latitude=-11.4927, longitude=140.1146}, message=success, timestamp=1537476329}
+
+[18-09-20 16:45:30:151 EDT] Schema returned to Data Studio
+[18-09-20 16:45:30:152 EDT] [{dataType=NUMBER, name=latitude, description=Latitude of the ISS returned via the API, label=Latitude, semantics={isReaggregatable=false, conceptType=METRIC, semanticType=NUMBER}}, {isDefault=true, dataType=STRING, name=position, description=Combination of the latitude and longitude fields, label=Position, semantics={conceptType=DIMENSION, semanticType=LATITUDE_LONGITUDE}}]
+
+[18-09-20 16:45:30:153 EDT] Data returned to Data Studio
+[18-09-20 16:45:30:153 EDT] [{values=[-11.4927, -11.4927,140.1146]}]

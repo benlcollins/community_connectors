@@ -142,6 +142,9 @@ function getData(request) {
     throw new Error("DS_USER: Unable to fetch the location data. Please try again later.");
   }
   
+  Logger.log("Response from API");
+  Logger.log(response);
+  
   // turn epoch timestamp into human readable date
   var date = new Date(response.timestamp * 1000);
   var dsDate = date.toISOString().slice(0,10).replace(/-/g,"");
