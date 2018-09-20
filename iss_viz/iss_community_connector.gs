@@ -39,7 +39,7 @@ var issSchema = [
     dataType: 'NUMBER',
     semantics: {
       conceptType: 'DIMENSION',
-      semanticType: 'DURATION',
+      semanticType: 'DURATION'
     }
   },
   {
